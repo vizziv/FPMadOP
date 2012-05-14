@@ -22,12 +22,12 @@ public class Multiplexer {
     }
 
     /**
-     * The object in index {@code selector.get()} (rounded to nearest integer)
+     * The object at index {@code selector.get()} (rounded to nearest integer)
      * of {@code objs}.
      * @return The chosen object.
      */
-    public Object choice() {
+    public Object getChoice() {
         // Limits selector to valid range, rounds to nearest integer.
-        return os[(int)(0.5 + Utils.limit(s.get(), 0, os.length - 1))];
+        return os[(int)(0.5 + Utils.limit(0, os.length - 1, s.getN()))];
     }
 }

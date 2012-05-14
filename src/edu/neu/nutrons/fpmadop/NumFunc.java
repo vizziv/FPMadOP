@@ -1,5 +1,7 @@
 package edu.neu.nutrons.fpmadop;
 
+import edu.wpi.first.wpilibj.PIDSource;
+
 /**
  * Many operators, each of which returns a {@link Num}.
  *
@@ -16,13 +18,23 @@ public class NumFunc {
         private NF() {}
     }
 
-    private static class Id implements Num {
+    private static class Constant implements Num {
         private double x = 0;
-        private Id(double x) {
+        private Constant(double x) {
             this.x = x;
         }
-        public double get() {
+        public double getN() {
             return x;
+        }
+    }
+
+    private static class FromPIDSource implements Num {
+        private PIDSource x;
+        private FromPIDSource(PIDSource x) {
+            this.x = x;
+        }
+        public double getN() {
+            return x.pidGet();
         }
     }
 
@@ -31,10 +43,10 @@ public class NumFunc {
         private Sum(Num[] xs) {
             this.xs = xs;
         }
-        public double get() {
+        public double getN() {
             double ret = 0;
             for(int i=0; i<xs.length; i++) {
-                ret += xs[i].get();
+                ret += xs[i].getN();
             }
             return ret;
         }
@@ -45,10 +57,10 @@ public class NumFunc {
         private Prod(Num[] xs) {
             this.xs = xs;
         }
-        public double get() {
+        public double getN() {
             double ret = 1;
             for(int i=0; i<xs.length; i++) {
-                ret *= xs[i].get();
+                ret *= xs[i].getN();
             }
             return ret;
         }
@@ -60,8 +72,8 @@ public class NumFunc {
             this.x = x;
             this.y = y;
         }
-        public double get() {
-            return x.get() - y.get();
+        public double getN() {
+            return x.getN() - y.getN();
         }
     }
 
@@ -71,9 +83,9 @@ public class NumFunc {
             this.x = x;
             this.y = y;
         }
-        public double get() {
-            double xVal = x.get();
-            double yVal = y.get();
+        public double getN() {
+            double xVal = x.getN();
+            double yVal = y.getN();
             // 0/0 often occurs upon initialization. Returning 1 in this case
             // is mostly harmless, even though it's a hack.
             if(yVal == 0.0 && Math.abs(xVal) < 0.0001) {
@@ -84,12 +96,24 @@ public class NumFunc {
     }
 
     private static class BoolToNum implements Num {
-        private Bool b;
+        private Bool p;
         private BoolToNum(Bool b) {
-            this.b = b;
+            this.p = b;
         }
-        public double get() {
-            return b.get() ? 1.0 : 0.0;
+        public double getN() {
+            return p.getB() ? 1.0 : 0.0;
+        }
+    }
+
+    private static class Limit implements Num {
+        private Num min, max, x;
+        private Limit(Num min, Num max, Num x) {
+            this.min = min;
+            this.max = max;
+            this.x = x;
+        }
+        public double getN() {
+            return Utils.limit(min.getN(), max.getN(), x.getN());
         }
     }
 
@@ -97,8 +121,8 @@ public class NumFunc {
         private NumMux(Num s, Num[] xs) {
             super(s, xs);
         }
-        public double get() {
-            return ((Num)super.choice()).get();
+        public double getN() {
+            return ((Num)super.getChoice()).getN();
         }
     }
 
@@ -112,10 +136,10 @@ public class NumFunc {
             this.pastX = new double[delay];
         }
         protected void handle() {
-            pastX[i] = x.get();
+            pastX[i] = x.getN();
             i = i+1 % pastX.length;
         }
-        public double get() {
+        public double getN() {
             return pastX[i];
         }
     }
@@ -130,9 +154,9 @@ public class NumFunc {
         }
         protected void handle() {
             lastX = curX;
-            curX = x.get();
+            curX = x.getN();
         }
-        public double get() {
+        public double getN() {
             return curX - lastX;
         }
     }
@@ -145,9 +169,9 @@ public class NumFunc {
            this.x = x;
         }
         protected void handle() {
-            sumX += x.get();
+            sumX += x.getN();
         }
-        public double get() {
+        public double getN() {
             return sumX;
         }
         public void reset() {
@@ -167,17 +191,27 @@ public class NumFunc {
     /**
      * Turns a {@code double} into a {@link Num}.
      * @param x A primitive number.
-     * @return A {@link Num} whose {@link Num#get()} method returns {@code x}.
+     * @return A {@link Num} whose {@link Num#getN()} method returns {@code x}.
      */
     public static Num id(double x) {
-        return new Id(x);
+        return new Constant(x);
+    }
+
+    /**
+     * Turns a {@link PIDSource} into a {@link Num}.
+     * @param x A sensor or other PID source.
+     * @return A {@link Num} whose {@link Num#getN()} method returns
+     * {@code x.pidGet()}.
+     */
+    public static Num id(PIDSource x) {
+        return new FromPIDSource(x);
     }
 
     /**
      * Adds a list of numbers.
      * @param xs A list of numbers.
-     * @return A {@link Num} whose {@code Num#get()} method returns the sum of
-     * {@code Num#get()} for each {@link Num} in {@code xs}.
+     * @return A {@link Num} whose {@code Num#getN()} method returns the sum of
+     * {@code Num#getN()} for each {@link Num} in {@code xs}.
      */
     public static Num sum(Num[] xs) {
         return new Sum(xs);
@@ -187,8 +221,8 @@ public class NumFunc {
      * Adds two numbers.
      * @param x A number.
      * @param y Another number.
-     * @return A {@link Num} whose {@code Num#get()} method returns
-     * {@code x.get() + y.get()}.
+     * @return A {@link Num} whose {@code Num#getN()} method returns
+     * {@code x.getN() + y.getN()}.
      */
     public static Num sum(Num x, Num y) {
         Num[] xs = {x, y};
@@ -199,8 +233,8 @@ public class NumFunc {
      * Adds two numbers, one of them primitive.
      * @param x A primitive number.
      * @param y A number.
-     * @return A {@link Num} whose {@code Num#get()} method returns
-     * {@code x + y.get()}.
+     * @return A {@link Num} whose {@code Num#getN()} method returns
+     * {@code x + y.getN()}.
      */
     public static Num sum(double x, Num y) {
         Num[] xs = {id(x), y};
@@ -212,8 +246,8 @@ public class NumFunc {
      * @param x A number.
      * @param y Another number.
      * @param z Yet another number.
-     * @return A {@link Num} whose {@code Num#get()} method returns
-     * {@code x.get() + y.get() + z.get()}.
+     * @return A {@link Num} whose {@code Num#getN()} method returns
+     * {@code x.getN() + y.getN() + z.getN()}.
      */
     public static Num sum(Num x, Num y, Num z) {
         Num[] xs = {x, y, z};
@@ -223,8 +257,8 @@ public class NumFunc {
     /**
      * Multiplies a list of numbers.
      * @param xs A list of numbers.
-     * @return A {@link Num} whose {@code Num#get()} method returns the product
-     * of {@code Num#get()} for each {@link Num} in {@code xs}.
+     * @return A {@link Num} whose {@code Num#getN()} method returns the product
+     * of {@code Num#getN()} for each {@link Num} in {@code xs}.
      */
     public static Num prod(Num[] xs) {
         return new Prod(xs);
@@ -234,8 +268,8 @@ public class NumFunc {
      * Multiplies two numbers.
      * @param x A number.
      * @param y Another number.
-     * @return A {@link Num} whose {@code Num#get()} method returns
-     * {@code x.get() * y.get()}.
+     * @return A {@link Num} whose {@code Num#getN()} method returns
+     * {@code x.getN() * y.getN()}.
      */
     public static Num prod(Num x, Num y) {
         Num[] xs = {x, y};
@@ -246,8 +280,8 @@ public class NumFunc {
      * Multiplies two numbers, one of them primitive.
      * @param x A primitive number.
      * @param y A number.
-     * @return A {@link Num} whose {@code Num#get()} method returns
-     * {@code x * y.get()}.
+     * @return A {@link Num} whose {@code Num#getN()} method returns
+     * {@code x * y.getN()}.
      */
     public static Num prod(double x, Num y) {
         Num[] xs = {id(x), y};
@@ -259,8 +293,8 @@ public class NumFunc {
      * @param x A number.
      * @param y Another number.
      * @param z Yet another number.
-     * @return A {@link Num} whose {@code Num#get()} method returns
-     * {@code x.get() * y.get() * z.get()}.
+     * @return A {@link Num} whose {@code Num#getN()} method returns
+     * {@code x.getN() * y.getN() * z.getN()}.
      */
     public static Num prod(Num x, Num y, Num z) {
         Num[] xs = {x, y, z};
@@ -271,8 +305,8 @@ public class NumFunc {
      * Subtracts the second number from the first.
      * @param x A number, the minuend.
      * @param y Another number, the subtrahend.
-     * @return A {@link Num} whose {@code Num#get()} method returns
-     * {@code x.get() - y.get()}.
+     * @return A {@link Num} whose {@code Num#getN()} method returns
+     * {@code x.getN() - y.getN()}.
      */
     public static Num diff(Num x, Num y) {
         return new Diff(x, y);
@@ -282,8 +316,8 @@ public class NumFunc {
      * Subtracts the second number from the first, which is primitive.
      * @param x A primitive number, the minuend.
      * @param y Another number, the subtrahend.
-     * @return A {@link Num} whose {@code Num#get()} method returns
-     * {@code x - y.get()}.
+     * @return A {@link Num} whose {@code Num#getN()} method returns
+     * {@code x - y.getN()}.
      */
     public static Num diff(double x, Num y) {
         return new Diff(id(x), y);
@@ -293,8 +327,8 @@ public class NumFunc {
      * The quotient of the first number over the second.
      * @param x A number, the dividend.
      * @param y Another number, the divisor.
-     * @return A {@link Num} whose {@code Num#get()} method returns
-     * {@code x.get() / y.get()}.
+     * @return A {@link Num} whose {@code Num#getN()} method returns
+     * {@code x.getN() / y.getN()}.
      */
     public static Num quot(Num x, Num y) {
         return new Quot(x, y);
@@ -304,8 +338,8 @@ public class NumFunc {
      * The quotient of the first number, a primitive, over the second.
      * @param x A primitive number, the dividend.
      * @param y Another number, the divisor.
-     * @return A {@link Num} whose {@code Num#get()} method returns
-     * {@code x / y.get()}.
+     * @return A {@link Num} whose {@code Num#getN()} method returns
+     * {@code x / y.getN()}.
      */
     public static Num quot(double x, Num y) {
         return new Quot(id(x), y);
@@ -313,12 +347,38 @@ public class NumFunc {
 
     /**
      * Converts a {@link Bool} to a {@link Num}.
-     * @param b A boolean.
-     * @return A {@link Num} whose {@link Num#get()} method returns one if
-     * {@code b.get()} is true and zero otherwise.
+     * @param p A boolean.
+     * @return A {@link Num} whose {@link Num#getN()} method returns one if
+     * {@code p.getB()} is true and zero otherwise.
      */
-    public static Num boolToNum(Bool b) {
-        return new BoolToNum(b);
+    public static Num boolToNum(Bool p) {
+        return new BoolToNum(p);
+    }
+
+    /**
+     * Limits the value of the given number to a specific range.
+     * @param min The minimum value the output takes.
+     * @param max The maximum value the output takes.
+     * @param x number.
+     * @return A {@link Num} whose {@link Num#getN()} method returns {@x.getN()}
+     * if it is between {@code min.getN()} and {@code max.getN()}. If not, return
+     * the extreme closer to {@code x}.
+     */
+    public static Num limit(Num min, Num max, Num x) {
+        return new Limit(min, max, x);
+    }
+
+    /**
+     * Limits the value of the given number to a specific range.
+     * @param min The minimum value the output takes.
+     * @param max The maximum value the output takes.
+     * @param x A number.
+     * @return A {@link Num} whose {@link Num#getN()} method returns {@x.getN()}
+     * if it is between {@code min.getN()} and {@code max.getN()}. If not, return
+     * the extreme closer to {@code x}.
+     */
+    public static Num limit(double min, double max, Num x) {
+        return limit(NumFunc.id(min), NumFunc.id(max), x);
     }
 
     /**
@@ -328,8 +388,8 @@ public class NumFunc {
      * @param x A number.
      * @param thread The {@link BlockThread} which determines how frequently
      * samples are taken.
-     * @return A {@link Num} whose {@link Num#get()} method returns the value of
-     * {@code x.get()} from {@code delay} samples ago. It is a {@link Block} in
+     * @return A {@link Num} whose {@link Num#getN()} method returns the value of
+     * {@code x.getN()} from {@code delay} samples ago. It is a {@link Block} in
      * the given thread.
      */
     public static NumBlock delay(int delay, Num x, BlockThread thread) {
@@ -341,8 +401,8 @@ public class NumFunc {
      * before initialization are assumed to be zero.
      * @param delay The number of steps to delay {@code x}.
      * @param x A number.
-     * @return A {@link Num} whose {@link Num#get()} method returns the value of
-     * {@code x.get()} from {@code delay} samples ago. It uses {@link Block} in
+     * @return A {@link Num} whose {@link Num#getN()} method returns the value of
+     * {@code x.getN()} from {@code delay} samples ago. It uses {@link Block} in
      * {@link BlockThread#main()}.
      */
     public static NumBlock delay(int delay, Num x) {
@@ -354,8 +414,8 @@ public class NumFunc {
      * @param x A number.
      * @param thread The {@link BlockThread} which determines how frequently
      * samples are taken.
-     * @return A {@link Num} whose {@link Num#get()} method returns the
-     * difference of the two most recent values of {@code x.get()}. It is a
+     * @return A {@link Num} whose {@link Num#getN()} method returns the
+     * difference of the two most recent values of {@code x.getN()}. It is a
      * {@link Block} in the given thread.
      */
     public static NumBlock delta(Num x, BlockThread thread) {
@@ -365,8 +425,8 @@ public class NumFunc {
     /**
      * The change between the two most recent values of the given {@link Num}.
      * @param x A number.
-     * @return A {@link Num} whose {@link Num#get()} method returns the
-     * difference of the two most recent values of {@code x.get()}. It is a
+     * @return A {@link Num} whose {@link Num#getN()} method returns the
+     * difference of the two most recent values of {@code x.getN()}. It is a
      * {@link Block} in {@link BlockThread#main()}.
      */
     public static NumBlock delta(Num x) {
@@ -378,8 +438,8 @@ public class NumFunc {
      * @param x A number.
      * @param thread The {@link BlockThread} which determines how frequently
      * samples are taken.
-     * @return A {@link Num} whose {@link Num#get()} method returns the
-     * sum of all previous values of {@code x.get()}. It is a {@link Block} in
+     * @return A {@link Num} whose {@link Num#getN()} method returns the
+     * sum of all previous values of {@code x.getN()}. It is a {@link Block} in
      * the given thread.
      */
     public static NumBlock accumulator(Num x, BlockThread thread) {
@@ -389,8 +449,8 @@ public class NumFunc {
     /**
      * The sum of all previous values of the given {@link Num}.
      * @param x A number.
-     * @return A {@link Num} whose {@link Num#get()} method returns the
-     * difference of the two most recent values of {@code x.get()}. It is a
+     * @return A {@link Num} whose {@link Num#getN()} method returns the
+     * difference of the two most recent values of {@code x.getN()}. It is a
      * {@link Block} in {@link BlockThread#main()}.
      */
     public static NumBlock accumulator(Num x) {
@@ -399,15 +459,15 @@ public class NumFunc {
 
     /**
      * Uses a given {@link Bool} to select one of two numbers to return.
-     * @param b A boolean.
+     * @param p A boolean.
      * @param x A number.
      * @param y Another number.
-     * @return A {@link Num} whose {@link Num#get()} method returns
-     * {@code x.get()} if {@code b.get()} is true and {@code y.get()} otherwise.
+     * @return A {@link Num} whose {@link Num#getN()} method returns
+     * {@code x.getN()} if {@code p.getB()} is true and {@code y.getN()} otherwise.
      */
-    public static Num ifThenElse(Bool b, Num x, Num y) {
+    public static Num ifThenElse(Bool p, Num x, Num y) {
         Num[] xs = {x, y};
-        return new NumMux(boolToNum(b), xs);
+        return new NumMux(boolToNum(p), xs);
     }
 
     /**
@@ -415,8 +475,8 @@ public class NumFunc {
      * @param x A number.
      * @param thread The {@link BlockThread} which determines how frequently
      * samples are taken.
-     * @return A {@link Num} whose {@link Num#get()} method returns the
-     * derivative of {@code x.get()} with respect to time. It uses blocks in the
+     * @return A {@link Num} whose {@link Num#getN()} method returns the
+     * derivative of {@code x.getN()} with respect to time. It uses blocks in the
      * given thread.
      */
     public static Num derivative(Num x, BlockThread thread) {
@@ -426,8 +486,8 @@ public class NumFunc {
     /**
      * The derivative of the given {@link Num} with respect to time.
      * @param x A number.
-     * @return A {@link Num} whose {@link Num#get()} method returns the
-     * derivative of {@code x.get()} with respect to time. It uses blocks in
+     * @return A {@link Num} whose {@link Num#getN()} method returns the
+     * derivative of {@code x.getN()} with respect to time. It uses blocks in
      * {@link BlockThread#main()}.
      */
     public static Num derivative(Num x) {
@@ -439,8 +499,8 @@ public class NumFunc {
      * @param x A number.
      * @param thread The {@link BlockThread} which determines how frequently
      * samples are taken.
-     * @return A {@link Num} whose {@link Num#get()} method returns the
-     * integral of {@code x.get()} with respect to time. It uses blocks in the
+     * @return A {@link Num} whose {@link Num#getN()} method returns the
+     * integral of {@code x.getN()} with respect to time. It uses blocks in the
      * given thread.
      */
     public static NumBlock integral(Num x, BlockThread thread) {
@@ -450,8 +510,8 @@ public class NumFunc {
     /**
      * The integral of the given {@link Num} with respect to time.
      * @param x A number.
-     * @return A {@link Num} whose {@link Num#get()} method returns the
-     * integral of {@code x.get()} with respect to time. It uses blocks in
+     * @return A {@link Num} whose {@link Num#getN()} method returns the
+     * integral of {@code x.getN()} with respect to time. It uses blocks in
      * {@link BlockThread#main()}.
      */
     public static NumBlock integral(Num x) {
@@ -464,8 +524,8 @@ public class NumFunc {
      * @param x A number.
      * @param thread The {@link BlockThread} which determines how frequently
      * samples are taken.
-     * @return A {@link Num} whose {@link Num#get()} method returns the
-     * sum of the {@code length} most recent values of {@code x.get()}. It uses
+     * @return A {@link Num} whose {@link Num#getN()} method returns the
+     * sum of the {@code length} most recent values of {@code x.getN()}. It uses
      * blocks in the given thread.
      */
     public static Num recentAccumulator(int length, Num x, BlockThread thread) {
@@ -479,8 +539,8 @@ public class NumFunc {
      * The sum of the most recent values of the given {@link Num}.
      * @param length The number of recent steps to use.
      * @param x A number.
-     * @return A {@link Num} whose {@link Num#get()} method returns the
-     * sum of the {@code length} most recent values of {@code x.get()}. It uses
+     * @return A {@link Num} whose {@link Num#getN()} method returns the
+     * sum of the {@code length} most recent values of {@code x.getN()}. It uses
      * blocks in {@link BlockThread#main()}.
      */
     public static Num recentAccumulator(int length, Num x) {
@@ -496,9 +556,9 @@ public class NumFunc {
      * @param x A number.
      * @param thread The {@link BlockThread} which determines how frequently
      * samples are taken.
-     * @return A {@link Num} whose {@link Num#get()} method returns the
+     * @return A {@link Num} whose {@link Num#getN()} method returns the
      * time-weighted average of the {@code length} most recent values of
-     * {@code x.get()}. It uses blocks in the given thread.
+     * {@code x.getN()}. It uses blocks in the given thread.
      */
     public static Num movingAverage(int length, Num x, BlockThread thread) {
         // Definite integral with respect to time over past few steps divided
@@ -514,9 +574,9 @@ public class NumFunc {
      * interval integrated over.)
      * @param length The number of recent steps to use.
      * @param x A number.
-     * @return A {@link Num} whose {@link Num#get()} method returns the
+     * @return A {@link Num} whose {@link Num#getN()} method returns the
      * time-weighted average of the {@code length} most recent values of
-     * {@code x.get()}. It uses blocks in {@link BlockThread#main()}.
+     * {@code x.getN()}. It uses blocks in {@link BlockThread#main()}.
      */
     public static Num movingAverage(int length, Num x) {
         return movingAverage(length, x, BlockThread.main());

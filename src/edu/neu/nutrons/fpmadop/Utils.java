@@ -17,7 +17,7 @@ public class Utils {
      * @return If {@code x} is outside the return range, returns the appropriate
      * extremum. Otherwise, returns {@code x}.
      */
-    public static double limit(double x, double min, double max) {
+    public static double limit(double min, double max, double x) {
         return Math.max(Math.min(x, max), min);
     }
 

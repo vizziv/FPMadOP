@@ -11,5 +11,5 @@ public interface Bool {
      * Get the encapsulated boolean.
      * @return The boolean.
      */
-    public boolean get();
+    public boolean getB();
 }

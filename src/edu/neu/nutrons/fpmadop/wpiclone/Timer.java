@@ -1,4 +1,6 @@
-package edu.neu.nutrons.fpmadop;
+package edu.neu.nutrons.fpmadop.wpiclone;
+
+import edu.neu.nutrons.fpmadop.Num;
 
 /**
  * WPILib's timer with the {@link Num} interface. The only change is that this
@@ -14,5 +16,9 @@ public class Timer extends edu.wpi.first.wpilibj.Timer implements Num {
      */
     public Timer() {
         start();
+    }
+
+    public double getN() {
+        return get();
     }
 }

@@ -18,7 +18,8 @@ public abstract class SometimesBlock extends Block {
      * @param reverse If true, instead do things when not in the specified mode.
      * @param thread The thread to be handled by.
      */
-    protected SometimesBlock(MatchState.Mode mode, boolean reverse, BlockThread thread) {
+    protected SometimesBlock(MatchState.Mode mode, boolean reverse,
+                             BlockThread thread) {
         super(thread);
         this.mode = mode;
         this.reverse = reverse;

@@ -11,5 +11,5 @@ public interface Num {
      * Get the encapsulated number.
      * @return The number.
      */
-    public double get();
+    public double getN();
 }

@@ -5,28 +5,28 @@ Ziv Scully, FRC Team 125
 <zivscully@gmail.com>
 
 WARNING: This package has not yet been tested on a robot! Parts of it
-have been tested on a computer and seem to be fine, but I wouldn't
-use this in competition without extensive testing beforehand. A
-corollary: if you do test this, please let me know how it goes!
+have been tested on a computer and seem to be fine, but I wouldn't use
+this in competition without extensive testing beforehand. A corollary:
+if you do test this, please let me know how it goes!
 
 This package enables a programming style somewhere in between block
 diagrams and functional programming. There are two key concepts that
 this package introduces:
 
--Num and Bool interfaces, which represent numbers (double-precision
-floating-point) and booleans, respectively. The key is that a Num's
-or Bool's value can change in real time.
+- Num and Bool interfaces, which represent numbers (double-precision
+  floating-point) and booleans, respectively. The key is that a Num's
+  or Bool's value can change in real time.
 
--The Block abstract class and BlockThread class. The former is the
-guts of an object that has a method that should be called repeatedly
-in real time, and the latter repeatedly calls that method of any
-blocks assigned to it.
+- The Block abstract class and BlockThread class. The former is the
+  guts of an object that has a method that should be called repeatedly
+  in real time, and the latter repeatedly calls that method of any
+  blocks assigned to it.
 
-Examples: A Num might be a sensor, such as an encoder or gyro, or
-the result of a function of other numbers, like a sum or product. A
-block might be a subsystem whose motors need to be constantly told
-what to do. Some things might be both a Num and a Block, such as a
-derivative or integral.
+Examples: A Num might be a sensor, such as an encoder or gyro, or the
+result of a function of other numbers, like a sum or product. A block
+might be a subsystem whose motors need to be constantly told what to
+do. Some things might be both a Num and a Block, such as a derivative
+or integral.
 
 After testing this on a real live robot, I will write a tutorial on
 using this package.
