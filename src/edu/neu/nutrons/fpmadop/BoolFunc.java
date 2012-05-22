@@ -18,8 +18,6 @@ public class BoolFunc {
         private BF() {}
     }
 
-    // Classes.
-
     private static class Constant implements Bool {
         private boolean p = false;
         private Constant(boolean p) {
@@ -99,6 +97,19 @@ public class BoolFunc {
         }
         public boolean getB() {
             return (x.getN() <= y.getN()) == less;
+        }
+    }
+
+    private static class InRange implements Bool {
+        private Num min, max, x;
+        private InRange(Num min, Num max, Num x) {
+            this.min = min;
+            this.max = max;
+            this.x = x;
+        }
+        public boolean getB() {
+            double xVal = x.getN();
+            return min.getN() <= xVal && xVal <= max.getN();
         }
     }
 
@@ -389,6 +400,32 @@ public class BoolFunc {
      */
     public static Bool greaterThan(double x, Num y) {
         return greaterThan(NumFunc.id(x), y);
+    }
+
+    /**
+     * Is true if a given number is between two others.
+     * @param min Lower bound of the range.
+     * @param max Upper bound of the range.
+     * @param x A number.
+     * @return A {@link Bool} whose {@code Bool#getB()} method is true when
+     * {@code x.getN()} is between {@code min.getN()} and {@code max.getN()}.
+     * (It will return false if {@code min.getN() &gt max.getN()}.)
+     */
+    public static Bool inRange(Num min, Num max, Num x) {
+        return new InRange(min, max, x);
+    }
+
+    /**
+     * Is true if a given number is between two others.
+     * @param min Lower bound of the range.
+     * @param max Upper bound of the range.
+     * @param x A number.
+     * @return A {@link Bool} whose {@code Bool#getB()} method is true when
+     * {@code x.getN()} is between {@code min} and {@code max}. (It will return
+     * false if {@code min &gt max}.)
+     */
+    public static Bool inRange(double min, double max, Num x) {
+        return inRange(NumFunc.id(min), NumFunc.id(max), x);
     }
 
     /**

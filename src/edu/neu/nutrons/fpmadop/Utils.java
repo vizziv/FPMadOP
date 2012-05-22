@@ -10,24 +10,12 @@ import com.sun.squawk.util.MathUtils;
 public class Utils {
 
     /**
-     * Limits a number to a given range.
-     * @param x A number.
-     * @param min The minimum of the return range.
-     * @param max The maximum of the return range.
-     * @return If {@code x} is outside the return range, returns the appropriate
-     * extremum. Otherwise, returns {@code x}.
-     */
-    public static double limit(double min, double max, double x) {
-        return Math.max(Math.min(x, max), min);
-    }
-
-    /**
      * The residue of a number modulo a given base.
      * @param x A number
      * @param base The divisor for which we calculate residues.
      * @return {@code x} mod {@code base}.
      */
-    public static double modulo(double x, double base) {
+    public static double modulo(double base, double x) {
         // Negate if and only if base is negative.
         // (Java's % isn't mathematically pretty in this way.)
         double sign = (base < 0) ? -1 : 1;
@@ -47,16 +35,28 @@ public class Utils {
     }
 
     /**
-     * Makes a number snap to a certain value if it is sufficiently close.
+     * Limits a given number to a specific range.
+     * @param min The minimum value the output takes.
+     * @param max The maximum value the output takes.
      * @param x A number.
-     * @param deadband The maximum distance {@code x} can be from {@code center}
-     * and still snap to {@code center}.
-     * @param center The value snapped to if {@code x} is sufficiently close.
-     * @return If {@code x} is within {@code deadband} of {@code center}, return
-     * center. Otherwise, return {@code x}.
+     * @return If {@code x} is outside the return range, returns the appropriate
+     * extremum. Otherwise, returns {@code x}.
      */
-    public static double deadband(double x, double deadband, double center) {
-        return (x < (center + deadband) && x > (center - deadband))
+    public static double limit(double min, double max, double x) {
+        return Math.max(Math.min(x, max), min);
+    }
+
+    /**
+     * Makes a number snap to a certain value if it is sufficiently close.
+     * @param center The value snapped to if {@code x} is sufficiently close.
+     * @param range The maximum distance {@code x} can be from {@code center}
+     * and still snap to {@code center}.
+     * @param x A number.
+     * @return If {@code x} is within {@code deadband} of {@code center}, return
+     * {@code center}. Otherwise, return {@code x}.
+     */
+    public static double deadband(double center, double range, double x) {
+        return (x < (center + range) && x > (center - range))
                 ? center : x;
     }
 }

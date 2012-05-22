@@ -117,6 +117,18 @@ public class NumFunc {
         }
     }
 
+    private static class Deadband implements Num {
+        private Num center, range, x;
+        private Deadband(Num center, Num range, Num x) {
+            this.center = center;
+            this.range = range;
+            this.x = x;
+        }
+        public double getN() {
+            return Utils.deadband(center.getN(), range.getN(), x.getN());
+        }
+    }
+
     private static class NumMux extends Multiplexer implements Num {
         private NumMux(Num s, Num[] xs) {
             super(s, xs);
@@ -356,29 +368,59 @@ public class NumFunc {
     }
 
     /**
-     * Limits the value of the given number to a specific range.
+     * Limits a given number to a specific range.
      * @param min The minimum value the output takes.
      * @param max The maximum value the output takes.
      * @param x number.
      * @return A {@link Num} whose {@link Num#getN()} method returns {@x.getN()}
-     * if it is between {@code min.getN()} and {@code max.getN()}. If not, return
-     * the extreme closer to {@code x}.
+     * if it is between {@code min.getN()} and {@code max.getN()} and returns
+     * the closer extremum otherwise.
      */
     public static Num limit(Num min, Num max, Num x) {
         return new Limit(min, max, x);
     }
 
     /**
-     * Limits the value of the given number to a specific range.
+     * Limits a given number to a specific range.
      * @param min The minimum value the output takes.
      * @param max The maximum value the output takes.
      * @param x A number.
      * @return A {@link Num} whose {@link Num#getN()} method returns {@x.getN()}
-     * if it is between {@code min.getN()} and {@code max.getN()}. If not, return
-     * the extreme closer to {@code x}.
+     * if it is between {@code min.getN()} and {@code max.getN()} and returns
+     * the closer extremum otherwise.
      */
     public static Num limit(double min, double max, Num x) {
-        return limit(NumFunc.id(min), NumFunc.id(max), x);
+        return limit(id(min), id(max), x);
+    }
+
+    /**
+     * Makes a number snap to a certain value if it is sufficiently close.
+     * @param center The value snapped to if {@code x.getN()} is sufficiently
+     * close.
+     * @param range The maximum distance {@code x.getN()} can be from
+     * {@code center.getN()} and still snap to {@code center.getN()}.
+     * @param x A number.
+     * @return A {@link Num} whose {@link Num#getN()} method returns
+     * {@code x.getN()} if it is not within {@code deadband.getN()} of
+     * {@code center.getN()} and returns {@code center.getN()} otherwise.
+     */
+    public static Num deadband(Num center, Num range, Num x) {
+        return new Deadband(center, range, x);
+    }
+
+    /**
+     * Makes a number snap to a certain value if it is sufficiently close.
+     * @param center The value snapped to if {@code x.getN()} is sufficiently
+     * close.
+     * @param range The maximum distance {@code x.getN()} can be from
+     * {@code center} and still snap to {@code center}.
+     * @param x A number.
+     * @return A {@link Num} whose {@link Num#getN()} method returns
+     * {@code x.getN()} if it is not within {@code deadband} of {@code center}
+     * and returns {@code center} otherwise.
+     */
+    public static Num deadband(double center, double range, Num x) {
+        return deadband(id(center), id(range), x);
     }
 
     /**
