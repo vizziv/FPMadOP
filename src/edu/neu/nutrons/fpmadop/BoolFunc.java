@@ -148,6 +148,23 @@ public class BoolFunc {
         }
     }
 
+    private static class Oscillator extends BoolBlock {
+        private Bool p;
+        private boolean state = false;
+        private Oscillator(Bool p, BlockThread thread) {
+            super(thread);
+            this.p = p;
+        }
+        protected void handle() {
+            if(p.getB()) {
+                state = !state;
+            }
+        }
+        public boolean getB() {
+            return state;
+        }
+    }
+
     private static class DebounceInt extends BoolBlock {
         private Bool p;
         private boolean state = false;
@@ -613,5 +630,29 @@ public class BoolFunc {
      */
     public static Bool pulseTrigger(boolean defaultState, Bool p) {
         return pulseTrigger(defaultState, p, BlockThread.main());
+    }
+
+    /**
+     * State toggles when the given {@link Bool} becomes true.
+     * @param p A boolean.
+     * @param thread The {@link BlockThread} which determines how frequently
+     * samples are taken.
+     * @return A {@link Bool} whose {@link Bool#getB()} method switches value
+     * whenever {@code p.getB()} becomes true. (A pulse trigger is applied to
+     * {@code p}.) It is a {@link Block} in the given thread.
+     */
+    public static BoolBlock toggle(Bool p, BlockThread thread) {
+        return new Oscillator(pulseTrigger(false, p, thread), thread);
+    }
+
+    /**
+     * State toggles when the given {@link Bool} becomes true.
+     * @param p A boolean.
+     * @return A {@link Bool} whose {@link Bool#getB()} method switches value
+     * whenever {@code p.getB()} becomes true. (A pulse trigger is applied to
+     * {@code p}.) It is a {@link Block} in {@link BlockThread#main()}.
+     */
+    public static BoolBlock toggle(Bool p) {
+        return toggle(p, BlockThread.main());
     }
 }
