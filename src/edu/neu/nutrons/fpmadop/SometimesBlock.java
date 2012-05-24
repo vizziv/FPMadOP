@@ -1,38 +1,22 @@
 package edu.neu.nutrons.fpmadop;
 
 /**
- * Represents a physical subsystem. A {@link Block} that doesn't do work when
- * the robot is disabled.
+ * A {@link Block} that only runs when a specified {@link Bool} is true.
  *
  * @author Ziv
  */
 public abstract class SometimesBlock extends Block {
 
-    private MatchState.Mode mode = MatchState.Mode.DISABLED;
-    private boolean reverse = false;
+    private Bool active;
 
     /**
-     * Creates a {@link Block} that only does things during the specified game
-     * mode.
-     * @param mode When this block does things.
-     * @param reverse If true, instead do things when not in the specified mode.
+     * Creates a {@link Block} that is handled when the given boolean is true.
+     * @param active The block runs when {@link Bool#getB()} of this is true.
      * @param thread The thread to be handled by.
      */
-    protected SometimesBlock(MatchState.Mode mode, boolean reverse,
-                             BlockThread thread) {
+    protected SometimesBlock(Bool active, BlockThread thread) {
         super(thread);
-        this.mode = mode;
-        this.reverse = reverse;
-    }
-
-    /**
-     * Creates a {@link Block} that only does things during the specified game
-     * mode.
-     * @param mode When this block does things.
-     * @param thread The thread to be handled by.
-     */
-    protected SometimesBlock(MatchState.Mode mode, BlockThread thread) {
-        this(mode, false, thread);
+        this.active = active;
     }
 
     /**
@@ -40,19 +24,17 @@ public abstract class SometimesBlock extends Block {
      * @param thread The thread to be handled by.
      */
     protected SometimesBlock(BlockThread thread) {
-        this(MatchState.Mode.DISABLED, true, thread);
+        this(BoolFunc.not(MatchState.Mode.DISABLED), thread);
     }
 
     /**
      * The method is called repeatedly, but only when as the robot is in its
-     * specified state.
-     * Physical actuator movement should probably go here. Analogous to
-     * {@link Block#handle()}.
+     * specified state. Analogous to {@link Block#handle()}.
      */
     protected abstract void sometimesHandle();
 
     protected final void handle() {
-        if((MatchState.getMode() == mode) != reverse) {
+        if(active.getB()) {
             sometimesHandle();
         }
     }

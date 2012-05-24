@@ -14,22 +14,44 @@ public class MatchState {
 
     /**
      * An enumeration of the modes the robot can be in: disabled, autonomous,
-     * and teleoperated.
+     * and teleoperated. Each mode object is a {@link Bool} that returns whether
+     * or not the robot is in that mode.
      */
-    public static class Mode {
+    public static abstract class Mode implements Bool {
         private Mode() {}
         /**
          * Represents disabled mode.
          */
-        public static Mode DISABLED = new Mode();
+        public static Mode DISABLED = new DisabledMode();
         /**
          * Represents autonomous mode.
          */
-        public static Mode AUTO = new Mode();
+        public static Mode AUTO = new AutoMode();
         /**
          * Represents teleoperated mode.
          */
-        public static Mode TELEOP = new Mode();
+        public static Mode TELEOP = new TeleopMode();
+    }
+
+    private static class DisabledMode extends Mode {
+        private DisabledMode() {}
+        public boolean getB() {
+            return isDisabled();
+        }
+    }
+
+    private static class AutoMode extends Mode {
+        private AutoMode() {}
+        public boolean getB() {
+            return isAuto();
+        }
+    }
+
+    private static class TeleopMode extends Mode {
+        private TeleopMode() {}
+        public boolean getB() {
+            return isTeleop();
+        }
     }
 
     private MatchState() {}
@@ -61,7 +83,7 @@ public class MatchState {
      */
     public static boolean isAuto() {
         if(bot == null) {
-            return true;
+            return false;
         }
         else {
             return bot.isAutonomous();
@@ -74,7 +96,7 @@ public class MatchState {
      */
     public static boolean isTeleop() {
         if(bot == null) {
-            return true;
+            return false;
         }
         else {
             return bot.isOperatorControl();
