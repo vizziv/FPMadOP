@@ -9,13 +9,19 @@ import edu.wpi.first.wpilibj.PIDSource;
  */
 public class NumFunc {
 
+    /**
+     * Two numbers are considered equal if the absolute value of their
+     * difference is less than this. Currently equal to 1/256.
+     */
+    public static final double EPSILON = 0.00390625;
+
     private NumFunc() {}
 
     /**
      * Short alias for {@link NumFunc}.
      */
-    public static class NF extends NumFunc {
-        private NF() {}
+    public static class N extends NumFunc {
+        private N() {}
     }
 
     private static class Constant implements Num {
@@ -126,6 +132,23 @@ public class NumFunc {
         }
         public double getN() {
             return Utils.deadband(center.getN(), range.getN(), x.getN());
+        }
+    }
+
+    private static class Extremum implements Num {
+        private Num[] xs;
+        private int sign = 1;
+        private Extremum(boolean max, Num[] xs) {
+            this.xs = xs;
+            sign = max ? 1 : -1;
+        }
+        public double getN() {
+            double ret = sign*Double.NEGATIVE_INFINITY;
+            for(int i=0; i<xs.length; i++) {
+                // If sign is -1, this finds minimum instead.
+                ret = sign * Math.max(sign*ret, sign*xs[i].getN());
+            }
+            return ret;
         }
     }
 
@@ -358,6 +381,100 @@ public class NumFunc {
     }
 
     /**
+     * The maximum of a list of numbers.
+     * @param xs A list of numbers.
+     * @return A {@link Num} whose {@code Num#getN()} method returns the maximum
+     * of {@code Num#getN()} for each {@link Num} in {@code xs}.
+     */
+    public static Num max(Num[] xs) {
+        return new Extremum(true, xs);
+    }
+
+    /**
+     * The maximum of two numbers.
+     * @param x A number.
+     * @param y Another number.
+     * @return A {@link Num} whose {@code Num#getN()} method returns
+     * {@code Math.max(x.getN(), y.getN())}.
+     */
+    public static Num max(Num x, Num y) {
+        Num[] xs = {x, y};
+        return max(xs);
+    }
+
+    /**
+     * The maximum of two numbers, one of them primitive.
+     * @param x A primitive number.
+     * @param y A number.
+     * @return A {@link Num} whose {@code Num#getN()} method returns
+     * {@code Math.max(x, y.getN())}.
+     */
+    public static Num max(double x, Num y) {
+        Num[] xs = {id(x), y};
+        return max(xs);
+    }
+
+    /**
+     * The maximum of three numbers.
+     * @param x A number.
+     * @param y Another number.
+     * @param z Yet another number.
+     * @return A {@link Num} whose {@code Num#getN()} method returns
+     * {@code Math.max(Math.max(x.getN(), y.getN()), z.getN())}.
+     */
+    public static Num max(Num x, Num y, Num z) {
+        Num[] xs = {x, y, z};
+        return max(xs);
+    }
+
+    /**
+     * The minimum of a list of numbers.
+     * @param xs A list of numbers.
+     * @return A {@link Num} whose {@code Num#getN()} method returns the minimum
+     * of {@code Num#getN()} for each {@link Num} in {@code xs}.
+     */
+    public static Num min(Num[] xs) {
+        return new Extremum(false, xs);
+    }
+
+    /**
+     * The minimum of two numbers.
+     * @param x A number.
+     * @param y Another number.
+     * @return A {@link Num} whose {@code Num#getN()} method returns
+     * {@code Math.min(x.getN(), y.getN())}.
+     */
+    public static Num min(Num x, Num y) {
+        Num[] xs = {x, y};
+        return min(xs);
+    }
+
+    /**
+     * The minimum of two numbers, one of them primitive.
+     * @param x A primitive number.
+     * @param y A number.
+     * @return A {@link Num} whose {@code Num#getN()} method returns
+     * {@code Math.min(x, y.getN())}.
+     */
+    public static Num min(double x, Num y) {
+        Num[] xs = {id(x), y};
+        return min(xs);
+    }
+
+    /**
+     * The minimum of three numbers.
+     * @param x A number.
+     * @param y Another number.
+     * @param z Yet another number.
+     * @return A {@link Num} whose {@code Num#getN()} method returns
+     * {@code Math.min(Math.min(x.getN(), y.getN()), z.getN())}.
+     */
+    public static Num min(Num x, Num y, Num z) {
+        Num[] xs = {x, y, z};
+        return min(xs);
+    }
+
+    /**
      * Converts a {@link Bool} to a {@link Num}.
      * @param p A boolean.
      * @return A {@link Num} whose {@link Num#getN()} method returns one if
@@ -448,7 +565,7 @@ public class NumFunc {
      * {@link BlockThread#main()}.
      */
     public static NumBlock delay(int delay, Num x) {
-        return new Delay(delay, x, BlockThread.main());
+        return delay(delay, x, BlockThread.main());
     }
 
     /**
@@ -500,16 +617,30 @@ public class NumFunc {
     }
 
     /**
+     * Creates a multiplexer, using a given {@link Num} to select from a list of
+     * other numbers.
+     * @param selector The number that determines which option is chosen.
+     * @param xs A list of numbers.
+     * @return A {@link Num} whose {@link Num#getN()} method returns
+     * {@code xs[selector.getN()].getN()}. ({@code selector.getN()} is rounded
+     * to the nearest integer.)
+     */
+    public static Num numMux(Num selector, Num[] xs) {
+        return new NumMux(selector, xs);
+    }
+
+    /**
      * Uses a given {@link Bool} to select one of two numbers to return.
      * @param p A boolean.
      * @param x A number.
      * @param y Another number.
      * @return A {@link Num} whose {@link Num#getN()} method returns
-     * {@code x.getN()} if {@code p.getB()} is true and {@code y.getN()} otherwise.
+     * {@code x.getN()} if {@code p.getB()} is true and {@code y.getN()}
+     * otherwise.
      */
     public static Num ifThenElse(Bool p, Num x, Num y) {
         Num[] xs = {x, y};
-        return new NumMux(boolToNum(p), xs);
+        return numMux(boolToNum(p), xs);
     }
 
     /**
@@ -518,8 +649,8 @@ public class NumFunc {
      * @param thread The {@link BlockThread} which determines how frequently
      * samples are taken.
      * @return A {@link Num} whose {@link Num#getN()} method returns the
-     * derivative of {@code x.getN()} with respect to time. It uses blocks in the
-     * given thread.
+     * derivative of {@code x.getN()} with respect to time. It uses blocks in
+     * the given thread.
      */
     public static Num derivative(Num x, BlockThread thread) {
         return quot(delta(x, thread), thread.dt());
@@ -622,5 +753,36 @@ public class NumFunc {
      */
     public static Num movingAverage(int length, Num x) {
         return movingAverage(length, x, BlockThread.main());
+    }
+
+    /**
+     * Remembers a previous value of the given number.
+     * @param writable Whether or not to update the output value of this number.
+     * @param x A number.
+     * @param thread The {@link BlockThread} which determines how frequently
+     * samples are taken.
+     * @return A {@link Num} whose {@link Num#getN()} method returns the
+     * latest value of {@code x.getN()} that occurred while
+     * {@code writable.getB()} was true. It uses blocks in the given thread.
+     */
+    public static Num remember(Bool writable, Num x, BlockThread thread) {
+        //return new Remember(writable, x, thread);
+        Numception hook = new Numception(thread);
+        Num mux = ifThenElse(writable, x, hook);
+        hook.wrap(mux);
+        return mux;
+    }
+
+    /**
+     * Remembers a previous value of the given number.
+     * @param writable Whether or not to update the output value of this number.
+     * @param x A number.
+     * @return A {@link Num} whose {@link Num#getN()} method returns the
+     * latest value of {@code x.getN()} that occurred while
+     * {@code writable.getB()} was true. It uses blocks in
+     * {@link BlockThread#main()}.
+     */
+    public static Num remember(Bool writable, Num x) {
+        return remember(writable, x, BlockThread.main());
     }
 }

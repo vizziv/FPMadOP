@@ -14,8 +14,8 @@ public class BoolFunc {
     /**
      * Short alias for {@link BoolFunc}.
      */
-    public static class BF extends BoolFunc {
-        private BF() {}
+    public static class B extends BoolFunc {
+        private B() {}
     }
 
     private static class Constant implements Bool {
@@ -87,19 +87,6 @@ public class BoolFunc {
         }
     }
 
-    private static class Compare implements Bool {
-        private boolean less;
-        private Num x, y;
-        private Compare(boolean less, Num x, Num y) {
-            this.less = less;
-            this.x = x;
-            this.y = y;
-        }
-        public boolean getB() {
-            return (x.getN() <= y.getN()) == less;
-        }
-    }
-
     private static class InRange implements Bool {
         private Num min, max, x;
         private InRange(Num min, Num max, Num x) {
@@ -108,8 +95,8 @@ public class BoolFunc {
             this.x = x;
         }
         public boolean getB() {
-            double xVal = x.getN();
-            return min.getN() <= xVal && xVal <= max.getN();
+            double curX = x.getN();
+            return min.getN() <= curX && curX <= max.getN();
         }
     }
 
@@ -376,50 +363,6 @@ public class BoolFunc {
     }
 
     /**
-     * Is true if the first number is less than the second.
-     * @param x A number.
-     * @param y Another number.
-     * @return A {@link Bool} whose {@code Bool#getB()} method returns
-     * {@code x.getN() &lt= y.getN()}.
-     */
-    public static Bool lessThan(Num x, Num y) {
-        return new Compare(true, x, y);
-    }
-
-    /**
-     * Is true if the first number is less than the second.
-     * @param x A primitive number.
-     * @param y A number.
-     * @return A {@link Bool} whose {@code Bool#getB()} method returns
-     * {@code x &lt= y.getN()}.
-     */
-    public static Bool lessThan(double x, Num y) {
-        return lessThan(NumFunc.id(x), y);
-    }
-
-    /**
-     * Is true if the first number is greater than the second.
-     * @param x A number.
-     * @param y Another number.
-     * @return A {@link Bool} whose {@code Bool#getB()} method returns
-     * {@code x.getN() &gt= y.getN()}.
-     */
-    public static Bool greaterThan(Num x, Num y) {
-        return new Compare(false, x, y);
-    }
-
-    /**
-     * Is true if the first number is greater than the second.
-     * @param x A primitive number.
-     * @param y A number.
-     * @return A {@link Bool} whose {@code Bool#getB()} method returns
-     * {@code x &lg= y.getN()}.
-     */
-    public static Bool greaterThan(double x, Num y) {
-        return greaterThan(NumFunc.id(x), y);
-    }
-
-    /**
      * Is true if a given number is between two others.
      * @param min Lower bound of the range.
      * @param max Upper bound of the range.
@@ -443,6 +386,74 @@ public class BoolFunc {
      */
     public static Bool inRange(double min, double max, Num x) {
         return inRange(NumFunc.id(min), NumFunc.id(max), x);
+    }
+
+    /**
+     * Is true if the first number is less than the second.
+     * @param x A number.
+     * @param y Another number.
+     * @return A {@link Bool} whose {@code Bool#getB()} method returns
+     * {@code x.getN() &lt= y.getN()}.
+     */
+    public static Bool lessThan(Num x, Num y) {
+        return inRange(x, NumFunc.id(Double.POSITIVE_INFINITY), y);
+    }
+
+    /**
+     * Is true if the first number is less than the second.
+     * @param x A primitive number.
+     * @param y A number.
+     * @return A {@link Bool} whose {@code Bool#getB()} method returns
+     * {@code x &lt= y.getN()}.
+     */
+    public static Bool lessThan(double x, Num y) {
+        return lessThan(NumFunc.id(x), y);
+    }
+
+    /**
+     * Is true if the first number is greater than the second.
+     * @param x A number.
+     * @param y Another number.
+     * @return A {@link Bool} whose {@code Bool#getB()} method returns
+     * {@code x.getN() &gt= y.getN()}.
+     */
+    public static Bool greaterThan(Num x, Num y) {
+        return inRange(NumFunc.id(Double.NEGATIVE_INFINITY), x, y);
+    }
+
+    /**
+     * Is true if the first number is greater than the second.
+     * @param x A primitive number.
+     * @param y A number.
+     * @return A {@link Bool} whose {@code Bool#getB()} method returns
+     * {@code x &lg= y.getN()}.
+     */
+    public static Bool greaterThan(double x, Num y) {
+        return greaterThan(NumFunc.id(x), y);
+    }
+
+    /**
+     * Is true if the two numbers given are equal up to a certain tolerance,
+     * {@link NumFunc#EPSILON}.
+     * @param x A number.
+     * @param y Another number.
+     * @return A {@link Bool} whose {@code Bool#getB()} method is true when
+     * {@code x.getN()} is approximately equal to {@code y.getN()}.
+     */
+    public static Bool equal(Num x, Num y) {
+        return inRange(-NumFunc.EPSILON, NumFunc.EPSILON, NumFunc.diff(x,y));
+    }
+
+    /**
+     * Is true if the two numbers given are equal up to a certain tolerance,
+     * {@link NumFunc#EPSILON}.
+     * @param x A primitive number.
+     * @param y A number.
+     * @return A {@link Bool} whose {@code Bool#getB()} method is true when
+     * {@code x} is approximately equal to {@code y.getN()}.
+     */
+    public static Bool equal(double x, Num y) {
+        return inRange(-NumFunc.EPSILON, NumFunc.EPSILON, NumFunc.diff(x,y));
     }
 
     /**

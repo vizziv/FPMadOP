@@ -3,9 +3,8 @@ package edu.neu.nutrons.fpmadop;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotBase;
 
-
 /**
- * Keeps track of whether the robot is in disabled, autonomous or teleop.
+ * Gives match time and whether the robot is in disabled, autonomous or teleop.
  */
 public class MatchState {
 
