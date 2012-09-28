@@ -29,4 +29,5 @@ do. Some things might be both a Num and a Block, such as a derivative
 or integral.
 
 After testing this on a real live robot, I will write a tutorial on
-using this package.
+using this package. (Update: as I've graduated, this isn't happening
+soon. But maybe one day....)
